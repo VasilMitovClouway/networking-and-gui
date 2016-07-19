@@ -9,6 +9,8 @@
 *.ear
 
 # User-specific stuff:
+.idea
+out
 .idea/workspace.xml
 .idea/tasks.xml
 .idea/dictionaries
