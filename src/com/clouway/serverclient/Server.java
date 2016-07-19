@@ -9,11 +9,12 @@ import java.net.Socket;
  * @Author Martin Milev (martinmariusmilev@gmail.com)
  */
 public class Server implements Runnable {
-  private MyClock date = new MyClock();
   private final Integer port;
   private final String msg;
+  private Clock date;
 
-  public Server(Integer port, String msg) throws IOException {
+  public Server(Integer port, String msg, Clock date) {
+    this.date = date;
     this.port = port;
     this.msg = msg;
   }
@@ -28,12 +29,12 @@ public class Server implements Runnable {
           try {
             PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
             out.println(msg + " " + date.currentDate());
+            out.close();
           } finally {
             socket.close();
           }
         }
-      }
-      finally {
+      } finally {
         listener.close();
       }
     } catch (IOException e) {

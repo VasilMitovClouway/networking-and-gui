@@ -1,10 +1,8 @@
 package com.clouway.serverclient;
 
 import org.jmock.Expectations;
-import org.jmock.auto.Mock;
 import org.jmock.integration.junit4.JUnitRuleMockery;
 import org.jmock.lib.concurrent.Synchroniser;
-import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -12,6 +10,7 @@ import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.util.Date;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -21,17 +20,14 @@ import static org.hamcrest.core.IsEqual.equalTo;
  * @Author Martin Milev (martinmariusmilev@gmail.com)
  */
 public class ClientTest {
-  private MyClock date;
-
-  @Rule
-  public JUnitRuleMockery context = new JUnitRuleMockery() {{
-    setThreadingPolicy(new Synchroniser());
-  }};
-
-  @Mock
-  MyDate MyDate;
 
   class FakeServer implements Runnable {
+    private Date date;
+
+    public FakeServer(Date date) {
+      this.date = date;
+    }
+
     @Override
     public void run() {
       try {
@@ -41,7 +37,8 @@ public class ClientTest {
             Socket socket = listener.accept();
             try {
               PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-              out.println(date.currentDate());
+              out.println(date);
+              out.close();
             } finally {
               socket.close();
             }
@@ -55,23 +52,29 @@ public class ClientTest {
     }
   }
 
-  @Before
-  public void setUp() throws Exception {
-    date = new MyClock();
-  }
+  @Rule
+  public JUnitRuleMockery context = new JUnitRuleMockery() {{
+    setThreadingPolicy(new Synchroniser());
+  }};
+
+  private Date realDate = new Date();
+  private Clock myDate = context.mock(Clock.class);
+  private Client client = new Client("", 4044);
 
   @Test
   public void happyPath() throws Exception {
-    Thread server = new Thread(new FakeServer());
-    Client client = new Client("", 4044);
+    Thread server = new Thread(new FakeServer(realDate));
 
     server.start();
 
     context.checking(new Expectations() {{
-      oneOf(MyDate).currentDate();
-      will(returnValue(date.currentDate()));
+      oneOf(myDate).currentDate();
+      will(returnValue(realDate));
     }});
 
-    assertThat(MyDate.currentDate(), is(equalTo(client.run())));
+    String actual = client.connect();
+    String expected = myDate.currentDate().toString();
+
+    assertThat(actual, is(equalTo(expected)));
   }
 }
