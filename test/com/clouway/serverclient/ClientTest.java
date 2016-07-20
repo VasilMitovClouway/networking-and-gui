@@ -12,39 +12,31 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.Date;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-
 /**
- * @Author Martin Milev (martinmariusmilev@gmail.com)
+ * @author Martin Milev <martinmariusmilev@gmail.com>
  */
 public class ClientTest {
 
   class FakeServer implements Runnable {
+    private String msg;
     private Date date;
 
-    public FakeServer(Date date) {
+    public FakeServer(Date date, String msg) {
       this.date = date;
+      this.msg = msg;
     }
 
     @Override
     public void run() {
-      try {
-        ServerSocket listener = new ServerSocket(4044);
-        try {
-          while (true) {
-            Socket socket = listener.accept();
-            try {
-              PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-              out.println(date);
-              out.close();
-            } finally {
-              socket.close();
-            }
+      try (ServerSocket listener = new ServerSocket(4044)) {
+        while (true) {
+          try (Socket socket = listener.accept()) {
+            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+            out.println(msg + " " + date);
+            out.close();
+          } catch (IOException e) {
+            e.printStackTrace();
           }
-        } finally {
-          listener.close();
         }
       } catch (IOException e) {
         e.printStackTrace();
@@ -57,24 +49,23 @@ public class ClientTest {
     setThreadingPolicy(new Synchroniser());
   }};
 
-  private Date realDate = new Date();
-  private Clock myDate = context.mock(Clock.class);
-  private Client client = new Client("", 4044);
+  private Date date = new Date();
+  private Display fakeDisplay = context.mock(Display.class);
+  private Client client = new Client("", 4044,fakeDisplay);
 
   @Test
   public void happyPath() throws Exception {
-    Thread server = new Thread(new FakeServer(realDate));
+    String msg = "Hello";
+    String expected = msg + " " + date.toString();
 
+    Thread server = new Thread(new FakeServer(date, msg));
     server.start();
 
     context.checking(new Expectations() {{
-      oneOf(myDate).currentDate();
-      will(returnValue(realDate));
+      oneOf(fakeDisplay).show(expected);
+      will(returnValue(expected));
     }});
 
-    String actual = client.connect();
-    String expected = myDate.currentDate().toString();
-
-    assertThat(actual, is(equalTo(expected)));
+    client.connect();
   }
 }

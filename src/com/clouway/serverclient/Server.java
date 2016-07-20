@@ -6,7 +6,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 
 /**
- * @Author Martin Milev (martinmariusmilev@gmail.com)
+ * @author Martin Milev <martinmariusmilev@gmail.com>
  */
 public class Server implements Runnable {
   private final Integer port;
@@ -21,21 +21,15 @@ public class Server implements Runnable {
 
   @Override
   public void run() {
-    try {
-      ServerSocket listener = new ServerSocket(port);
-      try {
-        while (true) {
-          Socket socket = listener.accept();
-          try {
-            PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
-            out.println(msg + " " + date.currentDate());
-            out.close();
-          } finally {
-            socket.close();
-          }
+    try (ServerSocket listener = new ServerSocket(port)) {
+      while (true) {
+        try (Socket socket = listener.accept()) {
+          PrintWriter out = new PrintWriter(socket.getOutputStream(), true);
+          out.println(msg + " " + date.now());
+          out.close();
+        } catch (IOException e) {
+          e.printStackTrace();
         }
-      } finally {
-        listener.close();
       }
     } catch (IOException e) {
       e.printStackTrace();

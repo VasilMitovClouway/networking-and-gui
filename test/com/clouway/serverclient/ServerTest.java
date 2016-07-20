@@ -17,7 +17,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 /**
- * @Author Martin Milev (martinmariusmilev@gmail.com)
+ * @author Martin Milev <martinmariusmilev@gmail.com>
  */
 public class ServerTest {
 
@@ -62,7 +62,7 @@ public class ServerTest {
     serverThread.start();
 
     context.checking(new Expectations() {{
-      oneOf(myDate).currentDate();
+      oneOf(myDate).now();
       will(returnValue(realDate));
     }});
 
